@@ -7,9 +7,7 @@ from datetime import datetime
 class VkTools:
     def __init__(self, acces_token):
         self.vkapi = vk_api.VkApi(token=acces_token)
-
     def get_profile_info(self, user_id):
-
         try:
             info, = self.vkapi.method('users.get',
                                       {'user_id': user_id,
@@ -28,7 +26,6 @@ class VkTools:
                   if info.get('bdate') is not None else None
                   }
         return result
-
     def search_worksheet(self, params, offset):
         try:
             users = self.vkapi.method('users.search',
@@ -44,14 +41,13 @@ class VkTools:
                                       )
         except ApiError as e:
             users = []
-            print('Вышла ошибочка ...')
+            print('ERROR')
             print(f'error = {e}')
 
         result = [{'name': item['first_name'] + ' ' + item['last_name'],
                    'id': item['id']
                    } for item in users['items'] if item['is_closed'] is False
                   ]
-
         return result
 
     def get_photos(self, id):
@@ -72,11 +68,9 @@ class VkTools:
                    'comments': item['comments']['count']
                    } for item in photos['items']
                   ]
-        '''сортировка по лайкам и комментариям, выводим 3 фото'''
+        #сортировка по лайкам и комментариям, ТОП 3 фото
         result.sort(key=lambda x: (x['likes'], x['comments']), reverse=True)
-
         return result[:3]
-
 
 if __name__ == '__main__':
     user_id = 469373582
@@ -85,6 +79,6 @@ if __name__ == '__main__':
     worksheets = tools.search_worksheet(params, 20)
     worksheet = worksheets.pop()
     photos = tools.get_photos(worksheet['id'])
-
     pprint(worksheets)
+
 
