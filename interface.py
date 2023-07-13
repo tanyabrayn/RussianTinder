@@ -81,7 +81,7 @@ class BotInterface():
                             photo_string = ''
                             for photo in photos:
                                 photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
-                            self.offset += 10
+                            self.offset += 1
                             # показываем первую анкету пользователю
                             self.message_send(event.user_id, f'имя: {worksheet["name"]} ссылка: vk.com/id{worksheet["id"]}',
                                 attachment=photo_string
@@ -115,7 +115,7 @@ class BotInterface():
                                     photo_string = ''
                                     for photo in photos:
                                         photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
-                                    self.offset += 10
+                                    self.offset += 1
                                     # показываем следующую анкету пользователю
                                     self.message_send(event.user_id,
                                                       f'имя: {worksheet["name"]} ссылка: vk.com/id{worksheet["id"]}',
