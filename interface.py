@@ -18,6 +18,7 @@ class BotInterface():
         self.worksheets = []
         self.offset = 0
 
+
     def message_send(self, user_id, message, attachment=None):
         self.vk.method('messages.send', {'user_id': user_id,
                         'message': message,
@@ -34,7 +35,7 @@ class BotInterface():
                     # список команд продублирован в приветствии бота в ВК
                     # 1 запрос - первый запрос пользователя
                     if command == 'привет' or command == 'старт' or command == 'начать' or command == 'пуск':
-                        self.message_send(event.user_id, f'Здравствуй, {self.params["name"]}. \n Я помогу тебе идеальную пару ВКонтакте. \n Для общения со мной нужно использовать специальные команды. Список команд для обшения со мной можно получить написав слово команды.')
+                        self.message_send(event.user_id, f'Здравствуй, {self.params["name"]}. \n Я помогу тебе найти идеальную пару ВКонтакте. \n Для общения со мной нужно использовать специальные команды, список команд можно получить, написав слово команды.')
                     # 2 запрос - список команд
                     elif command == 'команды' or command == 'команда':
                         self.message_send(event.user_id, 'Вот список команд для работы со мной: \n бот- запускаем работу и анализиуем твой профиль \n показать анкету - показываем подходящие анкеты \n следующая - листаем анкеты \n завершить - завершение работы бота')
@@ -56,8 +57,8 @@ class BotInterface():
                         if city is None:
                             self.message_send(event.user_id, 'Не удалось найти такой город')
                         else:
-                            self.params['city'] = self.request_info()
-                            self.message_send(event.user_id, f'Вы успешно установили город {city["title"]} \n Для просмотра анкет напиши команду показать анкеты')
+                            self.params['city'] = self.vk_tools.__class__(city_name)
+                            self.message_send(event.user_id, f'Вы успешно установили город.\n Для просмотра анкет напиши команду показать анкеты')
                     # 5 запрос - если нет возраста, то есть года в профиле
                     elif command.startswith("возраст "):
                         age = event.text.lower().split()[1]
@@ -136,3 +137,4 @@ if __name__ == '__main__':
     Base.metadata.create_all(engine)
     bot_interface = BotInterface(comunity_token, acces_token, engine)
     bot_interface.event_handler()
+
