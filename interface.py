@@ -56,7 +56,7 @@ class BotInterface():
                         if city is None:
                             self.message_send(event.user_id, 'Не удалось найти такой город')
                         else:
-                            self.params['city'] = city['title']
+                            self.params['city'] = self.request_info()
                             self.message_send(event.user_id, f'Вы успешно установили город {city["title"]} \n Для просмотра анкет напиши команду показать анкеты')
                     # 5 запрос - если нет возраста, то есть года в профиле
                     elif command.startswith("возраст "):
@@ -74,6 +74,7 @@ class BotInterface():
                     #6 запрос - запускаем анкеты
                     elif command == 'показать анкеты' or command == 'показать анкету':
                         # логика поиска анкет
+                        worksheet = self.worksheets.pop()
                         if not self.worksheets:
                             self.worksheets = self.vk_tools.search_worksheet(self.params, self.offset)
                         # логика фото
@@ -135,4 +136,3 @@ if __name__ == '__main__':
     Base.metadata.create_all(engine)
     bot_interface = BotInterface(comunity_token, acces_token, engine)
     bot_interface.event_handler()
-
