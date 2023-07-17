@@ -1,39 +1,37 @@
 # импорты
 import vk_api
+import data_store
 from sqlalchemy import create_engine
 from vk_api.longpoll import VkEventType, VkLongPoll
 from vk_api.utils import get_random_id
-
-from config import acces_token, comunity_token, db_url_object
+from config import access_token, comunity_token, db_url_object
 from core import VkTools
-from data_store import Base, add_user, check_user
 
 class BotInterface():
-    def __init__(self, comunity_token, acces_token, engine):
+    def __init__(self, comunity_token, access_token, engine):
         self.vk = vk_api.VkApi(token=comunity_token)
         self.longpoll = VkLongPoll(self.vk)
-        self.vk_tools = VkTools(acces_token)
-        self.engine = engine
+        self.vk_tools = VkTools(access_token)
         self.params = {}
         self.worksheets = []
         self.offset = 0
 
 
-
     def message_send(self, user_id, message, attachment=None):
-        self.vk.method('messages.send', {'user_id': user_id,
+        self.vk.method('messages.send',
+                        {'user_id': user_id,
                         'message': message,
                         'attachment': attachment,
-                        'random_id': get_random_id()}
-                       )
+                        'random_id': get_random_id(),})
 
-    def int_check(self, num):
-        try:
-            int(num)
-        except (TypeError, ValueError):
-            return False
-        else:
-            return True
+    def get_user_photo(self, user_id):
+        photos = self.vk_tools.get_photos(user_id)
+        photo_string = ''
+        for photo in photos:
+            photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
+        return photo_string
+# обработка событий / получение сообщений
+
     def event_handler(self):
         for event in self.longpoll.listen():
             if event.type == VkEventType.MESSAGE_NEW and event.to_me:
@@ -87,56 +85,27 @@ class BotInterface():
                     self.message_send(event.user_id,
                                       'Вы успешно установили свой возраст.\n Для просмотра анкет напиши команду показать анкеты')
                     # 6 запрос - запускаем анкеты
-                elif command == 'показать анкеты' or command == 'показать анкету':
+                elif command == 'показать анкеты' or command == 'показать анкету' or command == 'п':
                     # логика поиска анкет
-                    self.message_send(event.user_id, 'Начинаю поиск')
                     if self.worksheets:
                         worksheet = self.worksheets.pop()
-                        photos = self.api.get_photos(worksheet['id'])
+                        photos = self.vk_tools.get_photos(worksheet['id'])
                         photo_string = ''
                         for photo in photos:
                             photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
                     else:
-                        self.worksheets = self.vk(self.params, self.offset)
+                        self.worksheets = self.vk_tools.search_worksheet(self.params, self.offset)
                         worksheet = self.worksheets.pop()
-                        photos = self.api.get_photos(worksheet['id'])
+                        photos = self.vk_tools.get_photos(worksheet['id'])
                         photo_string = ''
                         for photo in photos:
                             photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
-                        self.offset += 1
-                        # показываем первую анкету пользователю
-                        self.message_send(event.user_id,f'имя: {worksheet["name"]} ссылка: vk.com/id{worksheet["id"]}',attachment=photo_string)
-                        # добавляем эту анкету в БД
-                        add_user(self.engine, event.user_id, worksheet['id'])
-                    # 7 запрос - листаем анкеты
-                elif command == 'следующая':
-                    # так как это не первая анкета, мы будем проверять ее в БД + записывать в БД
-                    def get_profile(self, worksheets, event):
-                        while True:
-                            if worksheets:
-                                # проверка анкеты в БД
-                                if not check_user(engine, event.user_id, worksheet['id']):
-                                    # добавить анкету в БД
-                                    add_user(engine, event.user_id, worksheet['id'])
-                                yield worksheet
-                            else:
-                                worksheet = worksheets.pop()
-                                worksheets = self.vk_tools.search_worksheet(self.params, self.offset)
-                                # логика поиска анкет
-                                if not self.worksheets:
-                                    self.worksheets = self.vk_tools.search_worksheet(self.params, self.offset)
-                                # логика фото
-                                photos = self.vk_tools.get_photos(worksheet['id'])
-                                photo_string = ''
-                                for photo in photos:
-                                    photo_string += f'photo{photo["owner_id"]}_{photo["id"]},'
-                                self.offset += 1
-                                # показываем следующую анкету пользователю
-                                self.message_send(event.user_id,
-                                                  f'имя: {worksheet["name"]} ссылка: vk.com/id{worksheet["id"]}',
-                                                  attachment=photo_string
-                                                  )
-                                add_user(self.engine, event.user_id, worksheet['id'])
+                        self.offset += 10
+                    self.message_send(event.user_id, f'имя: {worksheet["name"]} ссылка: vk.com/{worksheet["id"]}',
+                                      attachment=photo_string)
+                    # Проверка и добавление в бд
+                    if not data_store.check_user(engine, event.user_id, worksheet["id"]):
+                        data_store.add_user(engine, event.user_id, worksheet["id"])
                     # 8 запрос - завершение клиентом
                 elif command == 'пока' or command == "нет" or command == "стоп" or command == "завершить" or command == "закончить" or command == "конец":
                     self.message_send(event.user_id,
@@ -146,9 +115,8 @@ class BotInterface():
                     self.message_send(event.user_id,
                                       'Для общения со мной нужно использовать специальные команды. Список команд для обшения со мной можно получить написав слово команды.')
 
-
 if __name__ == '__main__':
     engine = create_engine(db_url_object)
-    Base.metadata.create_all(engine)
-    bot_interface = BotInterface(comunity_token, acces_token, engine)
+    bot_interface = BotInterface(comunity_token, access_token, engine)
     bot_interface.event_handler()
+    
