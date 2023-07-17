@@ -1,12 +1,12 @@
 from pprint import pprint
 import vk_api
 from vk_api.exceptions import ApiError
-from config import acces_token
+from config import access_token
 from datetime import datetime
 
 class VkTools:
     def __init__(self, acces_token):
-        self.vkapi = vk_api.VkApi(token=acces_token)
+        self.vkapi = vk_api.VkApi(token=access_token)
     def get_profile_info(self, user_id):
         try:
             info, = self.vkapi.method('users.get',
@@ -74,7 +74,7 @@ class VkTools:
 
 if __name__ == '__main__':
     user_id = 469373582
-    tools = VkTools(acces_token)
+    tools = VkTools(access_token)
     params = tools.get_profile_info(user_id)
     worksheets = tools.search_worksheet(params, 50)
     worksheet = worksheets.pop()
