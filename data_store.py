@@ -36,6 +36,7 @@ if __name__ == '__main__':
     Base.metadata.create_all(engine)
     res = check_user(engine, 1, 2)
     print(res)
+    
 
 
 
